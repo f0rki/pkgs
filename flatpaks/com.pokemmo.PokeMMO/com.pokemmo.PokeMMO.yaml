@@ -1,0 +1,67 @@
+app-id: com.pokemmo.PokeMMO
+
+runtime: org.freedesktop.Platform
+runtime-version: '22.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.openjdk17
+
+command: /app/bin/pokemmo-wrapper.sh
+
+finish-args:
+  - "--env=PATH=/app/jre/bin:/usr/bin"
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --share=network
+  # gpu
+  - --device=dri
+  # controller access
+  - --device=all
+  # audio
+  - --socket=pulseaudio
+  # needed for bluetooth controllers?
+  - --allow=bluetooth
+  - --filesystem=xdg-download
+
+modules:
+  - name: openjdk
+    buildsystem: simple
+    build-commands:
+      - /usr/lib/sdk/openjdk17/install.sh
+  - name: game
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/bin/
+      - mv ./*.sh /app/bin/
+      - mv pokemmo.zip /app/bin/
+      - chmod +x /app/bin/*.sh
+      - cd /app/bin && unzip pokemmo.zip revision.txt
+    post-install:
+      - |-
+        env
+        unzip /app/bin/pokemmo.zip 'data/icons/*'
+        for image in data/icons/*.png; do
+          px=$(basename $image .png)
+          install -Dm644 $image /app/share/icons/hicolor/${px}/apps/${FLATPAK_ID}.png
+        done
+        ls -R /app/share/
+        rm -rf data
+    sources:
+      - url: https://dl.pokemmo.com/download/PokeMMO-Client.zip?r=21958
+        type: file
+        # type: archive
+        dest-filename: pokemmo.zip 
+        sha256: c13b800a9e708f3114129fd154772a089e2f3a7b3844fc8fd53bbd10d6a4889a
+      - type: file
+        path: pokemmo-wrapper.sh
+  - name: meta-files
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 ./${FLATPAK_ID}.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - install -Dm644 ./${FLATPAK_ID}.metainfo.xml /app/share/metainfo/${FLATPAK_ID}.metainfo.xml
+    sources:
+      - type: file
+        path: com.pokemmo.PokeMMO.metainfo.xml
+      - type: file
+        path: com.pokemmo.PokeMMO.desktop

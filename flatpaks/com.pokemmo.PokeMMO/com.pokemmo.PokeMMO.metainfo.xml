@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>com.pokemmo.PokeMMO</id>
+  <launchable type="desktop-id">com.pokemmo.PokeMMO.desktop</launchable>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Unknown</project_license>
+  <translation type="gettext">PokeMMO</translation>
+  <name>PokeMMO</name>
+  <developer_name>PokeMMO</developer_name>
+  <summary>A Poke MMO</summary>
+  <description>
+      <p>Welcome to a new era of online monster battles. Stop playing by yourself and start playing with everyone else.</p>
+  </description>
+  <url type="homepage">https://pokemmo.com/</url>
+  <releases>
+    <release version="21958" date="2023-01-18"/>
+  </releases>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://pokemmo.com/build/images/screenshot/c-t.d7d3e35d.jpg</image>
+      <caption>Game</caption>
+    </screenshot>
+    <screenshot type="default">
+      <image>https://pokemmo.com/build/images/screenshot/d-t.8707f587.png</image>
+      <caption>Game</caption>
+    </screenshot>
+  </screenshots>
+</component>

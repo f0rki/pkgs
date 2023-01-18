@@ -1,0 +1,165 @@
+image: ...
+
+variables:
+  USE_TECTONIC: "0"
+  CD_TO_DIR: "."
+  MAIN_TEX: "main.tex"
+  LANGUAGE: "en"
+  ARXIV_CLEANER: "collector"
+  ARXIV_CLEANER_ARGS: ""
+  DIFF_TO_REF: "HEAD^"
+  LATEXDIFF_ARGS: ""
+  LANG_CHECKER: "textidote"
+
+.default-build:
+  script:
+    - "# ------------------------------------------------"
+    - "#  BUILD"
+    - "# ------------------------------------------------"
+    - "set -x; cd $CI_PROJECT_DIR/$CD_TO_DIR; set +x"
+    - echo "[CI] latex build $(pwd)/$MAIN_TEX (tectonic=$USE_TECTONIC)"
+    - test "$USE_TECTONIC" = "1" && (tectonic --keep-logs "$MAIN_TEX" || (cat *.log && exit 1))
+    - test "$USE_TECTONIC" = "0" && (latexmk -shell-escape -quiet -pdf "$MAIN_TEX" || (cat *.log && exit 1))
+    - test -e abstract.tex && echo "[CI] convert abstract.tex to .md" && pandoc abstract.tex -o abstract.md
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - $CD_TO_DIR/*.pdf
+      - $CD_TO_DIR/abstract.md
+
+
+.default-check:
+  script:
+    - "# ------------------------------------------------"
+    - "#  CHECK"
+    - "# ------------------------------------------------"
+    - "set -x; cd $CI_PROJECT_DIR/$CD_TO_DIR; set +x"
+    - echo "[CI] lacheck"; lacheck "$MAIN_TEX" | tee lacheck.report.log
+    - echo "[CI] chktex"; chktex -x -I -p "$MAIN_TEX" | tee chktex.report.log
+    - test "$LANG_CHECKER" = "textidote" && (echo "[CI] textidote" && textidote-ci --check "$LANGUAGE" --output html "$MAIN_TEX" > textidote-report.html && textidote-ci --check "$LANGUAGE" "$MAIN_TEX")
+    - test "$LANG_CHECKER" = "ltex" && (echo "[CI] ltex-cli"; ltex-cli "$MAIN_TEX" || echo "ltex-cli.status = $?")
+    - echo "[CI] bibclean"; find . -name "*.bib" -exec bibclean-ci '{}' ';'
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - $CD_TO_DIR/*.pdf
+      - $CD_TO_DIR/abstract.md
+      - $CD_TO_DIR/*.cleaned.bib
+      - $CD_TO_DIR/*/*.cleaned.bib
+      - $CD_TO_DIR/*/*/*.cleaned.bib
+      - $CD_TO_DIR/*.report.log
+      - $CD_TO_DIR/*/*.report.log
+      - $CD_TO_DIR/*.report.html
+      - $CD_TO_DIR/*/*.report.html
+
+
+.default-arxiv-prepare:
+  script:
+    - "# ------------------------------------------------"
+    - "# arxiv prepare job"
+    - "# ------------------------------------------------"
+    - set -x
+    - cd $CI_PROJECT_DIR/$CD_TO_DIR
+    - echo "[CI] arxiv latex clean $(pwd)/$MAIN_TEX (tectonic=$USE_TECTONIC)"
+    - test "$ARXIV_CLEANER" = "collector" && arxiv-collector $ARXIV_CLEANER_ARGS --verbose --dest "$CI_PROJECT_DIR/arxiv.tar.gz" $(basename "$MAIN_TEX" | cut -d '.' -f-1)
+    - test "$ARXIV_CLEANER" = "latex_cleaner" && arxiv_latex_cleaner $ARXIV_CLEANER_ARGS --verbose $(pwd) && ls -l .. && tar -czf "$CI_PROJECT_DIR/arxiv.tar.gz" -C "$CI_PROJECT_DIR/${CD_TO_DIR%/}_arXiv/" .
+    - set +x
+    - mkdir "$CI_PROJECT_DIR/arxiv_build"
+    - cd "$CI_PROJECT_DIR/arxiv_build"
+    - tar xf ../arxiv.tar.gz
+    - test "$USE_TECTONIC" = "1" && tectonic "$MAIN_TEX"
+    - test "$USE_TECTONIC" = "0" && latexmk -shell-escape -pdf "$MAIN_TEX"
+
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - arxiv.tar.gz
+      - arxiv_build/*.pdf
+
+
+.default-diff-pdf:
+  script:
+    - set -x
+    - "cd $CI_PROJECT_DIR/$CD_TO_DIR"
+    - "pwd; git fetch --all; git branch -a;"
+    - set +x
+    - "# ------------------------------------------------"
+    - "# Building LaTeX-diff PDF (to $DIFF_TO_REF)"
+    - "# ------------------------------------------------"
+    - set -x
+    - "cd $CI_PROJECT_DIR/$CD_TO_DIR"
+    - git show --oneline -s
+    - "# [CI] running latexdiff"
+    - "git latexdiff -v $LATEXDIFF_ARGS -o ./diff.pdf --run-bibtex --exclude-textcmd=\"section,subsection\" --add-to-config='PICTUREENV=(?:picture|DIFnomarkup|align|table)[\\w\\d*@]*' --graphics-markup=0 --no-view --main $MAIN_TEX $DIFF_TO_REF $(git show --format='%H' --no-patch)"
+
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - $CD_TO_DIR/*.pdf
+
+
+.default-changes-diff:
+  script:
+    - "set -x || true"
+    - "cd $CI_PROJECT_DIR/$CD_TO_DIR"
+    - "pwd; git fetch --all; git branch -a;"
+    - "set +x || true"
+    - "# ------------------------------------------------"
+    - "# Building LaTeX-diff PDF to HEAD^"
+    - "# ------------------------------------------------"
+    - set -x
+    - "cd $CI_PROJECT_DIR/$CD_TO_DIR"
+    - git show --oneline -s
+    - "# [CI] running latexdiff"
+    - "git latexdiff -v $LATEXDIFF_ARGS -o ./latest-changes.pdf --run-bibtex --exclude-textcmd=\"section,subsection\" --add-to-config='PICTUREENV=(?:picture|DIFnomarkup|align|table)[\\w\\d*@]*' --graphics-markup=0 --no-view --main $MAIN_TEX HEAD^ $(git show --format='%H' --no-patch)"
+
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - $CD_TO_DIR/*.pdf
+      - $CD_TO_DIR/latest-changes.pdf
+
+
+.default-build-and-check:
+  extends:
+    - .default-build
+    - .default-check
+  script:
+    - "# pdf build, check/lint"
+    - !reference [.default-build, script]
+    - !reference [.default-check, script]
+
+.default-build-check-changes:
+  extends:
+    - .default-build
+    - .default-changes-diff
+    - .default-check
+  script:
+    - "# pdf build, check/lint, and diff to HEAD^"
+    - !reference [.default-build, script]
+    - !reference [.default-check, script]
+    - !reference [.default-changes-diff, script]
+
+.default-build-check-diff:
+  extends:
+    - .default-build
+    - .default-diff-pdf
+    - .default-check
+  script:
+    - "# pdf build, check/lint, and diff to $DIFF_TO_REF"
+    - !reference [.default-build, script]
+    - !reference [.default-check, script]
+    - !reference [.default-diff-pdf, script]
+
+.default-build-check-changes-diff:
+  extends:
+    - .default-build
+    - .default-changes-diff
+    - .default-diff-pdf
+    - .default-check
+  script:
+    - "# pdf build, check/lint, diff to HEAD^, and diff to $DIFF_TO_REF"
+    - !reference [.default-build, script]
+    - !reference [.default-check, script]
+    - !reference [.default-changes-diff, script]
+    - !reference [.default-diff-pdf, script]

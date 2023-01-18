@@ -1,0 +1,6 @@
+[submodule "test/ieee-template"]
+	path = test/ieee-template
+	url = https://git.uni-due.de/uni-due-syssec/public/ieee-template.git
+[submodule "test/thesis-template"]
+	path = test/thesis-template
+	url = https://git.uni-due.de/uni-due-syssec/public/thesis-template.git

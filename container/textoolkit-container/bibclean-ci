@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -eu
+
+if (( $# != 1 )); then
+    echo "Illegal number of parameters" >&2 
+    echo "usage: $0 <path/to/bibliography.bib>" >&2 
+    exit 255
+fi
+
+cleaned_file="$(basename "$1").cleaned.bib"
+log_file="bibclean-err.report.log"
+
+echo "[CI] '$0 $1' run"
+bibclean -error-log "$log_file" "$1" > "$cleaned_file"
+echo ""
+echo "[CI] '$0 $1' errors"
+cat "$log_file"
+echo ""
+if command -v delta >/dev/null; then
+    echo "[CI] '$0 $1' suggested changes"
+    delta --color-only --paging never "$1" "$cleaned_file" || true
+else
+    diff "$1" "$cleaned_file" || true
+fi
+exit 0

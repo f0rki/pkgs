@@ -1,0 +1,6 @@
+*.html
+*.json
+*.orig
+.docker-credentials
+*.log
+*.bib

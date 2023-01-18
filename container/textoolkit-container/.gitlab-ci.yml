@@ -1,0 +1,100 @@
+stages:
+  - light_image_build
+  - full_image_build
+  - test
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+light-image-build:
+  stage: light_image_build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - "mkdir -p /kaniko/.docker || true"
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - sleep 1
+    - set -x; /kaniko/executor --force --cache=true --cache-ttl=72h --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --build-arg WITH_LM=0 --destination $CI_REGISTRY_IMAGE/textoolkit:${CI_COMMIT_TAG:-$CI_COMMIT_REF_NAME}
+
+full-image-build:
+  stage: full_image_build
+  needs: ["light-image-build"]
+  allow_failure: true
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - "mkdir -p /kaniko/.docker || true"
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - sleep 1
+    - set -x; /kaniko/executor --force --cache=true --cache-ttl=72h --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --build-arg WITH_LM=1 --destination $CI_REGISTRY_IMAGE/textoolkit-full:${CI_COMMIT_TAG:-$CI_COMMIT_REF_NAME}
+
+
+# include: 'default-gitlab-ci.yml'
+
+# test-default-ci:
+#   extends: .default-build-and-check
+#   image: $CI_REGISTRY_IMAGE/textoolkit:$CI_COMMIT_REF_NAME
+#   needs: ["light-image-build"]
+#   stage: test
+#   parallel:
+#     matrix:
+#       - CD_TO_DIR: ["./test/ieee-template/"]
+#         MAIN_TEX: ["paper.tex"]
+#         USE_TECTONIC: ["0", "1"]
+#       - CD_TO_DIR: ["./test/thesis-template/"]
+#         MAIN_TEX: ["syssec-thesis.tex"]
+#         USE_TECTONIC: ["0"]
+#
+# test-arxiv-prepare:
+#   extends: .default-arxiv-prepare
+#   image: $CI_REGISTRY_IMAGE/textoolkit:$CI_COMMIT_REF_NAME
+#   needs: ["light-image-build"]
+#   stage: test
+#   allow_failure: true
+#   parallel:
+#     matrix:
+#       - CD_TO_DIR: ["./test/ieee-template/"]
+#         MAIN_TEX: ["paper.tex"]
+#         USE_TECTONIC: ["0"]
+#         ARXIV_CLEANER: ["collector", "latex_cleaner"]
+#       - CD_TO_DIR: ["./test/thesis-template/"]
+#         MAIN_TEX: ["syssec-thesis.tex"]
+#         USE_TECTONIC: ["0"]
+#         ARXIV_CLEANER: ["collector", "latex_cleaner"]
+#
+# test-diff:
+#   extends: .default-diff-pdf
+#   image: $CI_REGISTRY_IMAGE/textoolkit:$CI_COMMIT_REF_NAME
+#   needs: ["light-image-build"]
+#   stage: test
+#   allow_failure: true
+#   parallel:
+#     matrix:
+#       - CD_TO_DIR: ["./test/ieee-template/"]
+#         MAIN_TEX: ["paper.tex"]
+#         USE_TECTONIC: ["0"]
+#       - CD_TO_DIR: ["./test/thesis-template/"]
+#         MAIN_TEX: ["syssec-thesis.tex"]
+#         USE_TECTONIC: ["0"]
+#
+#
+# .test-ieee-template-code-quality:
+#   image: $CI_REGISTRY_IMAGE/textoolkit:$CI_COMMIT_REF_NAME
+#   needs: ["light-image-build"]
+#   stage: test
+#
+#   script:
+#     - textidote-ci --check en --output html "$CI_PROJECT_DIR/test/ieee-template/paper.tex" > textidote.html
+#     - textidote-ci --check en --output json "$CI_PROJECT_DIR/test/ieee-template/paper.tex" > textidote.json
+#     - cat textidote.json | python ./textidote_to_codeclimate.py > code-quality.json
+#
+#   artifacts:
+#     paths:
+#       - textidote.html
+#       - textidote.json
+#       - code-quality.json
+#     expire_in: "1 week"
+#     reports:
+#       codequality: code-quality.json

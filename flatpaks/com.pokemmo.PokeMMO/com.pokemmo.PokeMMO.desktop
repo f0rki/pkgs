@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=PokeMMO
+GenericName=PokeMMO Multiplayer Game
+Comment=Poke Monster Battle Multiplayer
+Icon=com.pokemmo.PokeMMO
+Exec=pokemmo-wrapper.sh
+Categories=Game;
