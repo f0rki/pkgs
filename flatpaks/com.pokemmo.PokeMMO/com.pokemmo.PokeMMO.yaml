@@ -48,7 +48,7 @@ modules:
         ls -R /app/share/
         rm -rf data
     sources:
-      - url: https://dl.pokemmo.com/download/PokeMMO-Client.zip?r=21958
+      - url: https://dl.pokemmo.com/download/PokeMMO-Client.zip?r=22215
         type: file
         # type: archive
         dest-filename: pokemmo.zip 

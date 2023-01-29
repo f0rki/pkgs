@@ -15,12 +15,13 @@ esac
 set -e
 mkdir -p "$XDG_DATA_HOME/game/"
 cd "$XDG_DATA_HOME/game/"
-if ! test -e ./PokeMMO.exe || test "$(cat revision.txt)" -ne "$(cat /app/bin/revision.txt)"; then
+# if ! test -e ./PokeMMO.exe || test "$(cat revision.txt)" -ne "$(cat /app/bin/revision.txt)"; then
+if ! test -e ./PokeMMO.exe; then
   echo "[Unpacking] revision $(cat /app/bin/revision.txt)"
   if test -e ./revision.txt; then
     echo "[Unpacking] overwriting revision $(cat ./revision.txt)"
   fi
-  unzip /app/bin/pokemmo.zip
+  unzip -o  /app/bin/pokemmo.zip
 fi
 
 # PokeMMO currently requires JDK 17.
