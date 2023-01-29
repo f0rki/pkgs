@@ -5,7 +5,7 @@ RUN dnf upgrade -y \
     fish tmux \
     wget curl bat jq fzf skim pandoc \
     git make \
-    hexyl git-delta \
+    hexyl git-delta difftastic \
     rizin cutter-re \
     neovim python3-neovim \
     binutils gcc llvm clang clang-tools-extra \
