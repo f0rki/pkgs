@@ -16,20 +16,23 @@ RUN dnf upgrade -y \
     python3-mypy python3-mypy_extensions bandit python3-yapf \
     golang \
     qpdf \
-    meld \
-    xdg-open \
-    texlive-scheme-medium \
-    texlive-pdfx texlive-diagbox texlive-blindtext texlive-cleveref \
-    texlive-minted texlive-todonotes
+    ghostscript \
+    ImageMagick ImageMagick-libs
 
-ENV RUSTUP_HOME=/opt/rustup
-RUN mkdir -p $RUSTUP_HOME \
-  && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-  | sh -s -- -y;
-ENV PATH=$PATH:$HOME/.cargo/bin
-RUN export PATH=$PATH:$HOME/.cargo/bin/ \
-  && rustup component add rust-src rls clippy rustfmt \
-  && rustup toolchain install nightly 
+    # meld \
+    # texlive-scheme-medium \
+    # texlive-pdfx texlive-diagbox texlive-blindtext texlive-cleveref \
+    # texlive-minted texlive-todonotes
+
+# TODO: doesn't work properly, because of the different users.
+# ENV RUSTUP_HOME=/opt/rustup
+# RUN mkdir -p $RUSTUP_HOME \
+#   && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+#       | sh -s -- -y;
+# ENV PATH=$PATH:$HOME/.cargo/bin
+# RUN export PATH=$PATH:$HOME/.cargo/bin/ \
+#   && rustup component add rust-src rls clippy rustfmt \
+#   && rustup toolchain install nightly 
 
 LABEL com.github.containers.toolbox="true" \
       com.github.debarshiray.toolbox="true"
