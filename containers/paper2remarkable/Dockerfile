@@ -24,8 +24,14 @@ RUN apt-get update -q \
         libmagickwand-dev \
         pdftk \
         ghostscript \
-	      poppler-utils
+	      poppler-utils \
+        nodejs npm
 
-RUN pip install --no-cache-dir paper2remarkable readabilipy
+RUN pip install lxml[html_clean]
+RUN pip install --no-cache-dir 'git+https://github.com/alan-turing-institute/ReadabiliPy'
+RUN pip install --no-cache-dir paper2remarkable
+
+RUN readabilipy --help
+RUN p2r --help
 
 ENTRYPOINT ["p2r"]
