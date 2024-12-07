@@ -2,7 +2,7 @@ FROM golang:latest AS rmapi
 
 # ENV GOPATH /go
 # ENV PATH ${GOPATH}/bin:/usr/local/go/bin:$PATH
-ARG RMAPIREPO=github.com/juruen/rmapi
+ARG RMAPIREPO=github.com/ddvk/rmapi
 # as per https://github.com/juruen/rmapi/blob/18a9fb803f6afef2067d9491fddcb0f03cba2ee0/Dockerfile#L8
 ARG CGO_ENABLED=0
 
